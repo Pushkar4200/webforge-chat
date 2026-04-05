@@ -13,6 +13,7 @@ export function useChat() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const sendingRef = useRef(false);
 
   const activeConversation = conversations.find((c) => c.id === activeId) || null;
 
@@ -39,6 +40,10 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (content: string) => {
+      // Prevent duplicate sends
+      if (sendingRef.current || isLoading) return;
+      sendingRef.current = true;
+
       let convId = activeId;
       if (!convId) {
         convId = createConversation();
@@ -46,14 +51,18 @@ export function useChat() {
 
       const userMsg: ChatMessage = { role: "user", content };
 
-      setConversations((prev) =>
-        prev.map((c) => {
+      // Capture current messages before updating state
+      let currentMessages: ChatMessage[] = [];
+      setConversations((prev) => {
+        const conv = prev.find((c) => c.id === convId);
+        currentMessages = conv?.messages || [];
+        return prev.map((c) => {
           if (c.id !== convId) return c;
           const updated = [...c.messages, userMsg];
           const title = c.messages.length === 0 ? content.slice(0, 40) + (content.length > 40 ? "..." : "") : c.title;
           return { ...c, messages: updated, title };
-        })
-      );
+        });
+      });
 
       setIsLoading(true);
       const controller = new AbortController();
@@ -79,19 +88,20 @@ export function useChat() {
         );
       };
 
-      const allMessages = [
-        ...(conversations.find((c) => c.id === convId)?.messages || []),
-        userMsg,
-      ];
+      const allMessages = [...currentMessages, userMsg];
 
       try {
         await streamChat({
           messages: allMessages,
           onDelta: updateAssistant,
-          onDone: () => setIsLoading(false),
+          onDone: () => {
+            setIsLoading(false);
+            sendingRef.current = false;
+          },
           onError: (err) => {
             updateAssistant(`\n\n⚠️ ${err}`);
             setIsLoading(false);
+            sendingRef.current = false;
           },
           signal: controller.signal,
         });
@@ -100,14 +110,16 @@ export function useChat() {
           updateAssistant("\n\n⚠️ Something went wrong. Please try again.");
         }
         setIsLoading(false);
+        sendingRef.current = false;
       }
     },
-    [activeId, conversations, createConversation]
+    [activeId, isLoading, createConversation]
   );
 
   const stopGeneration = useCallback(() => {
     abortRef.current?.abort();
     setIsLoading(false);
+    sendingRef.current = false;
   }, []);
 
   return {
