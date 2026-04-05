@@ -13,7 +13,11 @@ export function useChat() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const sendingRef = useRef(false);
+  const loadingRef = useRef(false);
+  const conversationsRef = useRef<Conversation[]>([]);
+  conversationsRef.current = conversations;
+  const activeIdRef = useRef<string | null>(null);
+  activeIdRef.current = activeId;
 
   const activeConversation = conversations.find((c) => c.id === activeId) || null;
 
@@ -40,29 +44,35 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (content: string) => {
-      // Prevent duplicate sends
-      if (sendingRef.current || isLoading) return;
-      sendingRef.current = true;
+      if (loadingRef.current) return;
+      loadingRef.current = true;
 
-      let convId = activeId;
+      let convId = activeIdRef.current;
       if (!convId) {
-        convId = createConversation();
+        const id = crypto.randomUUID();
+        const conv: Conversation = {
+          id,
+          title: content.slice(0, 40) + (content.length > 40 ? "..." : ""),
+          messages: [],
+          createdAt: new Date(),
+        };
+        setConversations((prev) => [conv, ...prev]);
+        setActiveId(id);
+        convId = id;
       }
 
       const userMsg: ChatMessage = { role: "user", content };
 
-      // Capture current messages before updating state
-      let currentMessages: ChatMessage[] = [];
-      setConversations((prev) => {
-        const conv = prev.find((c) => c.id === convId);
-        currentMessages = conv?.messages || [];
-        return prev.map((c) => {
+      const currentMessages = conversationsRef.current.find((c) => c.id === convId)?.messages || [];
+
+      setConversations((prev) =>
+        prev.map((c) => {
           if (c.id !== convId) return c;
           const updated = [...c.messages, userMsg];
           const title = c.messages.length === 0 ? content.slice(0, 40) + (content.length > 40 ? "..." : "") : c.title;
           return { ...c, messages: updated, title };
-        });
-      });
+        })
+      );
 
       setIsLoading(true);
       const controller = new AbortController();
@@ -88,20 +98,21 @@ export function useChat() {
         );
       };
 
+      const finish = () => {
+        setIsLoading(false);
+        loadingRef.current = false;
+      };
+
       const allMessages = [...currentMessages, userMsg];
 
       try {
         await streamChat({
           messages: allMessages,
           onDelta: updateAssistant,
-          onDone: () => {
-            setIsLoading(false);
-            sendingRef.current = false;
-          },
+          onDone: finish,
           onError: (err) => {
             updateAssistant(`\n\n⚠️ ${err}`);
-            setIsLoading(false);
-            sendingRef.current = false;
+            finish();
           },
           signal: controller.signal,
         });
@@ -109,17 +120,16 @@ export function useChat() {
         if ((e as Error).name !== "AbortError") {
           updateAssistant("\n\n⚠️ Something went wrong. Please try again.");
         }
-        setIsLoading(false);
-        sendingRef.current = false;
+        finish();
       }
     },
-    [activeId, isLoading, createConversation]
+    [] // no state dependencies - uses refs
   );
 
   const stopGeneration = useCallback(() => {
     abortRef.current?.abort();
     setIsLoading(false);
-    sendingRef.current = false;
+    loadingRef.current = false;
   }, []);
 
   return {
