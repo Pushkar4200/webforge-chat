@@ -1,42 +1,38 @@
 import ReactMarkdown from "react-markdown";
-import { Copy, RefreshCw, Check } from "lucide-react";
+import { Copy, RefreshCw, Check, Eye, Code } from "lucide-react";
 import { useState } from "react";
 import { ChatMessage as ChatMessageType } from "@/lib/streamChat";
+import { extractHtmlFromMessage, hasHtmlCode } from "@/lib/htmlExtractor";
 
 interface Props {
   message: ChatMessageType;
   onRegenerate?: () => void;
+  onPreview?: (html: string) => void;
   isLast?: boolean;
   isLoading?: boolean;
 }
 
-function convertMarkdownToHtml(md: string): string {
-  // Basic conversion for copy functionality
-  return md
-    .replace(/^### (.*$)/gm, '<h3 class="text-xl font-semibold mt-8 mb-3">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-10 mb-4">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mt-12 mb-6">$1</h1>')
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/^- (.*$)/gm, '<li class="ml-4">$1</li>')
-    .replace(/^---$/gm, '<hr class="my-8 border-gray-200" />')
-    .replace(/\n\n/g, "</p><p>")
-    .replace(/^(?!<[hlu]|<li|<hr|<p)/gm, "<p>")
-    .replace(/<p><\/p>/g, "");
-}
-
-const ChatMessageComponent = ({ message, onRegenerate, isLast, isLoading }: Props) => {
+const ChatMessageComponent = ({ message, onRegenerate, onPreview, isLast, isLoading }: Props) => {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
-  const isWebsite = message.content.includes("## Website for:");
+  const containsHtml = hasHtmlCode(message.content);
 
-  const handleCopy = () => {
-    const html = convertMarkdownToHtml(message.content);
-    const wrapped = `<div class="max-w-4xl mx-auto px-6 py-12 font-sans">\n${html}\n</div>`;
-    navigator.clipboard.writeText(wrapped);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyCode = () => {
+    const html = extractHtmlFromMessage(message.content);
+    if (html) {
+      navigator.clipboard.writeText(html);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
+
+  const handlePreview = () => {
+    const html = extractHtmlFromMessage(message.content);
+    if (html && onPreview) onPreview(html);
+  };
+
+  // Remove the html code block from display and show it cleaner
+  const displayContent = message.content;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} animate-fade-in-up`}>
@@ -50,19 +46,26 @@ const ChatMessageComponent = ({ message, onRegenerate, isLast, isLoading }: Prop
         {isUser ? (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-chat-ai-foreground prose-strong:text-foreground prose-li:text-chat-ai-foreground">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
+          <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-chat-ai-foreground prose-strong:text-foreground prose-li:text-chat-ai-foreground prose-code:text-xs prose-pre:bg-muted prose-pre:rounded-lg prose-pre:text-xs">
+            <ReactMarkdown>{displayContent}</ReactMarkdown>
           </div>
         )}
 
-        {!isUser && isWebsite && !isLoading && (
+        {!isUser && containsHtml && !isLoading && (
           <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
             <button
-              onClick={handleCopy}
+              onClick={handlePreview}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/15"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Preview Website
+            </button>
+            <button
+              onClick={handleCopyCode}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-accent"
             >
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Copied!" : "Copy as HTML"}
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Code className="w-3.5 h-3.5" />}
+              {copied ? "Copied!" : "Copy Code"}
             </button>
             {onRegenerate && (
               <button
