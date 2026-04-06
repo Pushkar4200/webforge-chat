@@ -14,9 +14,10 @@ Rules:
 
 IMPORTANT OUTPUT FORMAT:
 - When generating a website, output the FULL HTML code inside a single code block with \`\`\`html and \`\`\` markers.
-- The HTML must be a complete, self-contained page with inline CSS and JS (no external files).
+- The HTML must be a complete, self-contained page with inline CSS and JS (no external files except CDN links for fonts/icons).
 - Use modern CSS (flexbox, grid, gradients, animations, smooth scrolling).
 - Use Google Fonts via CDN link for beautiful typography.
+- Include Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
 - Make it fully responsive (mobile-first).
 - Include smooth scroll behavior, hover effects, and subtle animations.
 - Use the user's requested color palette, or choose a beautiful one if not specified.
@@ -66,36 +67,30 @@ serve(async (req) => {
       });
     }
 
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           ...messages,
         ],
         stream: true,
-        max_tokens: 8000,
+        max_tokens: 16000,
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const t = await response.text();
-      console.error("Groq API error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI service error" }), {
+      console.error("AI API error:", response.status, t);
+      return new Response(JSON.stringify({ error: "AI service error. Please try again." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
