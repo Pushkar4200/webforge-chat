@@ -33,8 +33,8 @@ const ChatInput = ({ onSend, onStop, isLoading }: Props) => {
   };
 
   return (
-    <div className="border-t border-border bg-card/80 backdrop-blur-sm px-4 py-3">
-      <div className="max-w-3xl mx-auto flex items-end gap-3">
+    <div className="border-t border-border bg-card px-4 py-3">
+      <div className="max-w-3xl mx-auto flex items-end gap-2">
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
@@ -43,23 +43,23 @@ const ChatInput = ({ onSend, onStop, isLoading }: Props) => {
             onKeyDown={handleKeyDown}
             placeholder="Describe your business..."
             rows={1}
-            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/50 transition-all scrollbar-thin"
+            className="w-full resize-none rounded border border-input bg-background px-3 py-2.5 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-all scrollbar-thin"
           />
         </div>
         {isLoading ? (
           <button
             onClick={onStop}
-            className="flex-shrink-0 w-10 h-10 rounded-xl bg-destructive text-destructive-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
+            className="flex-shrink-0 w-9 h-9 rounded bg-destructive text-destructive-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
           >
-            <Square className="w-4 h-4" />
+            <Square className="w-3.5 h-3.5" />
           </button>
         ) : (
           <button
             onClick={handleSubmit}
             disabled={!input.trim()}
-            className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-shrink-0 w-9 h-9 rounded bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
