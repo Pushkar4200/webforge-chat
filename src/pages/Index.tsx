@@ -27,7 +27,6 @@ const Index = () => {
 
   const messages = activeConversation?.messages || [];
 
-  // Auto-show preview when AI generates HTML
   const latestHtml = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === "assistant") {
@@ -38,7 +37,6 @@ const Index = () => {
     return null;
   }, [messages]);
 
-  // Auto-open preview when new HTML is detected and streaming is done
   useEffect(() => {
     if (latestHtml && !isLoading) {
       setPreviewHtml(latestHtml);
@@ -73,8 +71,8 @@ const Index = () => {
 
       {/* Chat panel */}
       <div className={`flex-1 flex flex-col min-w-0 ${previewHtml ? "max-w-[50%]" : ""}`}>
-        {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+        {/* SLDS-style page header */}
+        <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-card">
           <button
             onClick={() => setSidebarOpen(true)}
             className="md:hidden text-muted-foreground hover:text-foreground transition-colors"
@@ -82,7 +80,7 @@ const Index = () => {
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
               <Zap className="w-3 h-3 text-primary-foreground" />
             </div>
             <h1 className="font-semibold text-sm text-foreground">
@@ -92,17 +90,17 @@ const Index = () => {
         </header>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin bg-background">
+          <div className="max-w-3xl mx-auto px-4 py-6 space-y-3">
             {messages.length === 0 && (
               <div className="flex justify-start animate-fade-in-up">
-                <div className="max-w-[85%] md:max-w-[75%] rounded-2xl rounded-bl-md px-5 py-3.5 bg-chat-ai text-chat-ai-foreground border border-border shadow-sm">
+                <div className="max-w-[85%] md:max-w-[75%] rounded px-4 py-3 bg-chat-ai text-chat-ai-foreground border border-border slds-card">
                   <div className="prose prose-sm max-w-none">
                     <p className="whitespace-pre-line text-sm leading-relaxed">
                       Hi! I'm <strong>WebForge AI</strong> ⚡
                     </p>
                     <p className="text-sm leading-relaxed mt-2">
-                      Tell me your business name and any details — tone, colors, audience, goal — even if it's messy — and I'll build a <strong>real, live website</strong> for you instantly!
+                      Tell me your business name and any details — tone, colors, audience, goal — and I'll build a <strong>real, live website</strong> for you instantly!
                     </p>
                   </div>
                 </div>
@@ -126,7 +124,7 @@ const Index = () => {
 
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex justify-start animate-fade-in-up">
-                <div className="rounded-2xl rounded-bl-md bg-chat-ai border border-border shadow-sm">
+                <div className="rounded bg-chat-ai border border-border slds-card">
                   <TypingIndicator />
                 </div>
               </div>
@@ -134,7 +132,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Input */}
         <ChatInput onSend={sendMessage} onStop={stopGeneration} isLoading={isLoading} />
       </div>
 
