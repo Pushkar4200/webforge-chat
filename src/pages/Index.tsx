@@ -141,6 +141,7 @@ const Index = () => {
           <WebsitePreview
             html={previewHtml}
             onClose={() => setPreviewHtml(null)}
+            onHtmlChange={(newHtml) => setPreviewHtml(newHtml)}
           />
         </div>
       )}
