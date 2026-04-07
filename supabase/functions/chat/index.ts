@@ -22,29 +22,24 @@ IMPORTANT OUTPUT FORMAT:
 - Include smooth scroll behavior, hover effects, and subtle animations.
 - Use the user's requested color palette, or choose a beautiful one if not specified.
 
-IMAGES - CRITICAL:
-- ALWAYS use real, high-quality images from Unsplash Source. Use direct image URLs like:
-  https://images.unsplash.com/photo-PHOTO_ID?w=800&q=80
-- Pick images that are RELEVANT to the business type and section context. For example:
-  - Coffee shop → use coffee, cafe interior, latte art images
-  - Gym → use fitness, workout, gym equipment images
-  - Restaurant → use food, dining, chef images
-  - Tech company → use technology, workspace, coding images
-- Use different images for different sections (hero, about, services, testimonials, etc.)
-- For team/testimonial sections, use portrait photos from https://randomuser.me/api/portraits/men/N.jpg or /women/N.jpg (where N is 1-99)
-- NEVER use placeholder.com, via.placeholder.com, or grey placeholder boxes
-- Always add descriptive alt text on every <img> tag
-- Use object-fit: cover and proper aspect ratios so images look professional
-- Here are reliable Unsplash photo IDs by category (use format https://images.unsplash.com/photo-{ID}?w=800&q=80):
-  Coffee/Cafe: 1509042239860-f550ce710b93, 1495474472287-4d71bcdd2085, 1501339847302-ac426a4a7cbb
-  Restaurant/Food: 1517248135467-4c7edcad34c4, 1414235077428-338989a2e8c0, 1504674900247-0877df9cc836
-  Fitness/Gym: 1534438327276-14e5300c3a48, 1571019614242-c5c5dee9f50c, 1517836357463-d25dfeac3438
-  Technology: 1518770660439-4636190af475, 1504384308090-c894fdcc538d, 1531297484001-80022131f5a1
-  Nature/Outdoor: 1441974231531-c6227db76b6e, 1470071459604-3b5ec3a7fe05, 1469474968028-56623f02e42e
-  Business/Office: 1497366216548-37526070297c, 1497215842964-222b430dc094, 1553877522-43269d4ea984
-  Beauty/Spa: 1540555700478-4be289fbec6f, 1519823551278-64ac92734fb1, 1507652313519-d4e9174996dd
-  Real Estate: 1560518883-ce09059eeffa, 1600596542815-ffad4c1539a9, 1600585154340-be6161a56a0c
-- For any other business type, choose the closest matching category or use general professional images.
+IMAGES - ABSOLUTELY CRITICAL (DO NOT SKIP):
+- Every section of the website MUST have at least one visible image. No section should be image-less.
+- Use https://picsum.photos for ALL general/section images. Format: https://picsum.photos/seed/{keyword}/800/600
+  - The {keyword} should be descriptive and unique per image (e.g., "coffee-hero", "cafe-interior", "team-photo", "service-1")
+  - Change dimensions as needed: /800/400 for banners, /400/400 for squares, /600/600 for cards
+  - Examples:
+    - Hero: https://picsum.photos/seed/hero-coffee/1200/600
+    - About: https://picsum.photos/seed/about-team/800/500
+    - Service card 1: https://picsum.photos/seed/service-web/400/300
+    - Service card 2: https://picsum.photos/seed/service-design/400/300
+    - Service card 3: https://picsum.photos/seed/service-seo/400/300
+- For team/testimonial portraits: use https://randomuser.me/api/portraits/men/N.jpg or /women/N.jpg (N = 1-99)
+- NEVER use unsplash direct links (they often break), placeholder.com, via.placeholder.com, or grey boxes
+- NEVER leave any <img> tag with a broken or empty src
+- Every <img> MUST have: descriptive alt text, object-fit: cover, proper width/height or aspect ratio
+- Use CSS background-image with picsum URLs for hero sections when appropriate
+- AIM FOR 8-12 IMAGES minimum across the entire website
+- Double-check: every card, every section, every testimonial must have a working image
 
 - The website must include these sections as appropriate:
   - Navigation bar (sticky, with smooth scroll links)
