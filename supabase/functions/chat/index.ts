@@ -13,7 +13,7 @@ Rules:
 - When you have enough details, generate a COMPLETE, REAL, PRODUCTION-READY single-page website using HTML, CSS, and JavaScript.
 
 IMPORTANT OUTPUT FORMAT:
-- When generating a website, output the FULL HTML code inside a single code block with \\`\\`\\`html and \\`\\`\\` markers.
+- When generating a website, output the FULL HTML code inside a single html code block.
 - The HTML must be a complete, self-contained page with inline CSS and JS (no external files except CDN links for fonts/icons).
 - Use modern CSS (flexbox, grid, gradients, animations, smooth scrolling).
 - Use Google Fonts via CDN link for beautiful typography.
