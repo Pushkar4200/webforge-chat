@@ -53,15 +53,20 @@ IMAGES - ABSOLUTELY CRITICAL (DO NOT SKIP):
 - Double-check: every card, every section, every testimonial must have a working, topic-relevant image
 - MIX photo IDs from the list — never repeat the same ID twice on a page
 
-- The website must include these sections as appropriate:
-  - Navigation bar (sticky, with smooth scroll links)
+- The website MUST include these sections:
+  - **Header / Navigation bar** (sticky, top of page) — This is CRITICAL:
+    - Must include the business name/logo on the left
+    - Navigation links in the center or right: Home, About, Services, Contact
+    - A "Login" and "Sign Up" button on the far right, styled distinctly (e.g., Login as outline/ghost button, Sign Up as a filled/primary button)
+    - The header must be visually polished with proper spacing, background color, and responsive (hamburger menu on mobile)
+    - Smooth scroll links for on-page sections
   - Hero section (with headline, subheadline, CTA button, gradient or image background)
   - About Us section
   - Services / Offerings section (cards layout)
   - Why Choose Us / Features section
   - Testimonials section
   - Contact / CTA section
-  - Footer
+  - Footer (include the same nav links + social media icons)
 - Add a brief summary BEFORE the code block explaining the website you built (2-3 sentences max).
 - Add SEO meta tags, favicon placeholder, and proper semantic HTML.
 
