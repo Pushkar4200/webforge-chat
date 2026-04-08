@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { toast } from "@/hooks/use-toast";
 import { ChatMessage, streamChat } from "@/lib/streamChat";
 
 export interface Conversation {
@@ -62,7 +63,6 @@ export function useChat() {
       }
 
       const userMsg: ChatMessage = { role: "user", content };
-
       const currentMessages = conversationsRef.current.find((c) => c.id === convId)?.messages || [];
 
       setConversations((prev) =>
@@ -111,19 +111,29 @@ export function useChat() {
           onDelta: updateAssistant,
           onDone: finish,
           onError: (err) => {
-            updateAssistant(`\n\n⚠️ ${err}`);
+            const title = err.status === 402 ? "AI credits needed" : err.status === 429 ? "Too many requests" : "Chat request failed";
+            updateAssistant(`\n\n⚠️ ${err.message}`);
+            toast({
+              title,
+              description: err.message,
+            });
             finish();
           },
           signal: controller.signal,
         });
       } catch (e) {
         if ((e as Error).name !== "AbortError") {
-          updateAssistant("\n\n⚠️ Something went wrong. Please try again.");
+          const message = "Something went wrong. Please try again.";
+          updateAssistant(`\n\n⚠️ ${message}`);
+          toast({
+            title: "Chat request failed",
+            description: message,
+          });
         }
         finish();
       }
     },
-    [] // no state dependencies - uses refs
+    []
   );
 
   const stopGeneration = useCallback(() => {
