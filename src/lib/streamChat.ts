@@ -1,5 +1,10 @@
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
+export type ChatStreamError = {
+  message: string;
+  status: number;
+};
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export async function streamChat({
@@ -12,7 +17,7 @@ export async function streamChat({
   messages: ChatMessage[];
   onDelta: (text: string) => void;
   onDone: () => void;
-  onError: (error: string) => void;
+  onError: (error: ChatStreamError) => void;
   signal?: AbortSignal;
 }) {
   const resp = await fetch(CHAT_URL, {
@@ -27,12 +32,18 @@ export async function streamChat({
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({}));
-    onError(data.error || `Error ${resp.status}`);
+    onError({
+      message: data.error || `Error ${resp.status}`,
+      status: resp.status,
+    });
     return;
   }
 
   if (!resp.body) {
-    onError("No response body");
+    onError({
+      message: "No response body",
+      status: 500,
+    });
     return;
   }
 
@@ -55,7 +66,10 @@ export async function streamChat({
       if (!line.startsWith("data: ")) continue;
 
       const jsonStr = line.slice(6).trim();
-      if (jsonStr === "[DONE]") { streamDone = true; break; }
+      if (jsonStr === "[DONE]") {
+        streamDone = true;
+        break;
+      }
 
       try {
         const parsed = JSON.parse(jsonStr);
@@ -80,7 +94,9 @@ export async function streamChat({
         const parsed = JSON.parse(jsonStr);
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) onDelta(content);
-      } catch { /* ignore */ }
+      } catch {
+        // ignore partial leftovers on final flush
+      }
     }
   }
 
