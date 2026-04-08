@@ -13,7 +13,7 @@ Rules:
 - When you have enough details, generate a COMPLETE, REAL, PRODUCTION-READY single-page website using HTML, CSS, and JavaScript.
 
 IMPORTANT OUTPUT FORMAT:
-- When generating a website, output the FULL HTML code inside a single code block with \`\`\`html and \`\`\` markers.
+- When generating a website, output the FULL HTML code inside a single code block with \\`\\`\\`html and \\`\\`\\` markers.
 - The HTML must be a complete, self-contained page with inline CSS and JS (no external files except CDN links for fonts/icons).
 - Use modern CSS (flexbox, grid, gradients, animations, smooth scrolling).
 - Use Google Fonts via CDN link for beautiful typography.
@@ -82,65 +82,157 @@ If the user asks to modify the generated website (change tone, add sections, cha
 Example output format:
 Here's your stunning website for [Business Name]! I've created a [tone] design with [colors] that perfectly captures your brand.
 
-\`\`\`html
+\\`\\`\\`html
 <!DOCTYPE html>
 <html lang="en">
 <head>...</head>
 <body>...</body>
 </html>
-\`\`\`
+\\`\\`\\`
 
 You can preview it live on the right panel, or copy the code to use it anywhere!`;
+
+type ProviderResult = {
+  response: Response;
+  provider: "lovable-ai" | "groq";
+};
+
+function jsonResponse(status: number, error: string) {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function parseError(response: Response) {
+  const rawText = await response.text();
+  let message = "AI service error. Please try again.";
+
+  try {
+    const parsed = JSON.parse(rawText);
+    message = parsed?.message || parsed?.error?.message || parsed?.error || message;
+  } catch {
+    if (rawText) message = rawText.slice(0, 300);
+  }
+
+  return { rawText, message };
+}
+
+async function callLovableAI(messages: unknown[]) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...messages,
+      ],
+      stream: true,
+      max_tokens: 16000,
+    }),
+  });
+
+  return response;
+}
+
+async function callGroq(messages: unknown[]) {
+  const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...messages,
+      ],
+      stream: true,
+      max_tokens: 8192,
+      temperature: 0.8,
+    }),
+  });
+
+  return response;
+}
+
+async function getProviderResponse(messages: unknown[]): Promise<ProviderResult> {
+  const lovableResponse = await callLovableAI(messages);
+
+  if (lovableResponse.ok) {
+    return { response: lovableResponse, provider: "lovable-ai" };
+  }
+
+  const lovableError = await parseError(lovableResponse.clone());
+  console.error("Lovable AI error:", lovableResponse.status, lovableError.rawText);
+
+  if (lovableResponse.status !== 402 && lovableResponse.status !== 429) {
+    return { response: lovableResponse, provider: "lovable-ai" };
+  }
+
+  const hasGroqKey = Boolean(Deno.env.get("GROQ_API_KEY"));
+  if (!hasGroqKey) {
+    return { response: lovableResponse, provider: "lovable-ai" };
+  }
+
+  const groqResponse = await callGroq(messages);
+  if (groqResponse.ok) {
+    console.info("Falling back to Groq after Lovable AI failure", lovableResponse.status);
+    return { response: groqResponse, provider: "groq" };
+  }
+
+  const groqError = await parseError(groqResponse.clone());
+  console.error("Groq fallback error:", groqResponse.status, groqError.rawText);
+  return { response: lovableResponse, provider: "lovable-ai" };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { messages } = await req.json();
+
     if (!messages || !Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "messages array required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse(400, "messages array required");
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
-        ],
-        stream: true,
-        max_tokens: 16000,
-      }),
-    });
+    const { response, provider } = await getProviderResponse(messages);
 
     if (!response.ok) {
-      const t = await response.text();
-      console.error("AI API error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI service error. Please try again." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const { message, rawText } = await parseError(response);
+      console.error("Final AI provider error:", provider, response.status, rawText);
+
+      if (response.status === 402) {
+        return jsonResponse(402, "AI credits are exhausted for this project. Please add workspace credits in Settings → Workspace → Usage and try again.");
+      }
+
+      if (response.status === 429) {
+        return jsonResponse(429, "Too many AI requests right now. Please wait a moment and try again.");
+      }
+
+      return jsonResponse(response.status >= 400 && response.status < 600 ? response.status : 500, message);
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-AI-Provider": provider,
+      },
     });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse(500, e instanceof Error ? e.message : "Unknown error");
   }
 });
